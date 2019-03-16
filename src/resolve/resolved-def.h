@@ -2,6 +2,7 @@
 #pragma once
 
 #include <inttypes.h>
+#include <arpa/inet.h>
 
 #include "time-util.h"
 
@@ -23,5 +24,6 @@
 
 #define SD_RESOLVED_QUERY_TIMEOUT_USEC (120 * USEC_PER_SEC)
 
-/* 127.0.0.53 in native endian */
-#define INADDR_DNS_STUB ((in_addr_t) 0x7f000035U)
+#define INADDR_DNS_STUB "127.0.0.53"
+#define INPORT_DNS_STUB 53
+#define IFNAME_DNS_STUB "lo"

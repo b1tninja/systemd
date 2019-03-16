@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <printf.h>
 
 #include "alloc-util.h"
 #include "escape.h"
@@ -721,6 +722,22 @@ int sockaddr_pretty(
 
         *ret = p;
         return 0;
+}
+
+int _printf_sockaddr(FILE *stream, const struct printf_info *info, const void *const *args) {
+        _cleanup_free_ char* buf;
+        union sockaddr_union *sa = *(union sockaddr_union **)(args[0]);
+        if(sockaddr_pretty((const struct sockaddr*)(&(sa->sa)), sizeof(*sa), true, false, &buf) < 0)
+                buf = NULL;
+        return 1;
+}
+
+
+int _printf_sockaddr_arginfo(const struct printf_info *info, size_t n, int *argtypes, int *sz) {
+        if (n > 0)
+                argtypes[0] = PA_POINTER;
+
+        return 1;
 }
 
 int getpeername_pretty(int fd, bool include_port, char **ret) {

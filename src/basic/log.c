@@ -15,6 +15,7 @@
 #include <sys/un.h>
 #include <time.h>
 #include <unistd.h>
+#include <printf.h>
 
 #include "sd-messages.h"
 
@@ -1317,6 +1318,8 @@ void log_setup_service(void) {
         /* Sets up logging the way it is most appropriate for running a program as a service. Note that using this
          * doesn't make the binary unsuitable for invocation on the command line, as log output will still go to the
          * terminal if invoked interactively. */
+
+        register_printf_specifier('N', (printf_function*)_printf_sockaddr, (printf_arginfo_size_function *)_printf_sockaddr_arginfo);
 
         log_set_target(LOG_TARGET_AUTO);
         log_parse_environment();

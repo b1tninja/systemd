@@ -1603,7 +1603,7 @@ static int resolved_listening(void) {
         if (r < 0)
                 return log_debug_errno(r, "Failed to query DNSStubListener property: %s", bus_error_message(&error, r));
 
-        return STR_IN_SET(dns_stub_listener_mode, "udp", "yes");
+        return STR_IN_SET(dns_stub_listener_mode, "udp", "tcp", "yes");
 }
 
 static int setup_resolv_conf(const char *dest) {

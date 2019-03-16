@@ -745,12 +745,9 @@ void manager_next_dns_server(Manager *m) {
 
 bool dns_server_address_valid(int family, const union in_addr_union *sa) {
 
-        /* Refuses the 0 IP addresses as well as 127.0.0.53 (which is our own DNS stub) */
+        /* Refuses the 0 IP addresses and families other than AF_INET or AF_INET6 */
 
         if (in_addr_is_null(family, sa))
-                return false;
-
-        if (family == AF_INET && sa->in.s_addr == htobe32(INADDR_DNS_STUB))
                 return false;
 
         return true;

@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <printf.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
@@ -198,3 +199,6 @@ static inline int setsockopt_int(int fd, int level, int optname, int value) {
 
         return 0;
 }
+
+int _printf_sockaddr(FILE *stream, const struct printf_info *info, const void *const *args);
+int _printf_sockaddr_arginfo(const struct printf_info *info, size_t n, int *argtypes, int *sz);

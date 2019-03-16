@@ -124,7 +124,10 @@ struct Manager {
         usec_t etc_hosts_last, etc_hosts_mtime;
         bool read_etc_hosts;
 
-        /* Local DNS stub on 127.0.0.53:53 */
+        /* Local DNS stub */
+        union sockaddr_union dns_stub_sockaddr;
+        char* dns_stub_ifname;
+
         int dns_stub_udp_fd;
         int dns_stub_tcp_fd;
 

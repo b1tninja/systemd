@@ -1,5 +1,9 @@
 /* SPDX-License-Identifier: LGPL-2.1+ */
 
+#include <stdarg.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include <netinet/ip.h>
 #include "fd-util.h"
 #include "missing_network.h"
 #include "resolved-dns-stub.h"
@@ -393,11 +397,6 @@ static int on_dns_stub_packet(sd_event_source *s, int fd, uint32_t revents, void
 }
 
 static int manager_dns_stub_udp_fd(Manager *m) {
-        union sockaddr_union sa = {
-                .in.sin_family = AF_INET,
-                .in.sin_port = htobe16(53),
-                .in.sin_addr.s_addr = htobe32(INADDR_DNS_STUB),
-        };
         _cleanup_close_ int fd = -1;
         int r;
 
@@ -420,11 +419,10 @@ static int manager_dns_stub_udp_fd(Manager *m) {
         if (r < 0)
                 return r;
 
-        /* Make sure no traffic from outside the local host can leak to onto this socket */
-        if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, "lo", 3) < 0)
+        if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, m->dns_stub_ifname, strlen(m->dns_stub_ifname)) < 0)
                 return -errno;
 
-        if (bind(fd, &sa.sa, sizeof(sa.in)) < 0)
+        if (bind(fd, &(m->dns_stub_sockaddr.sa), sizeof(m->dns_stub_sockaddr)) < 0)
                 return -errno;
 
         r = sd_event_add_io(m->event, &m->dns_stub_udp_event_source, fd, EPOLLIN, on_dns_stub_packet, m);
@@ -482,11 +480,6 @@ static int on_dns_stub_stream(sd_event_source *s, int fd, uint32_t revents, void
 }
 
 static int manager_dns_stub_tcp_fd(Manager *m) {
-        union sockaddr_union sa = {
-                .in.sin_family = AF_INET,
-                .in.sin_addr.s_addr = htobe32(INADDR_DNS_STUB),
-                .in.sin_port = htobe16(53),
-        };
         _cleanup_close_ int fd = -1;
         int r;
 
@@ -513,11 +506,10 @@ static int manager_dns_stub_tcp_fd(Manager *m) {
         if (r < 0)
                 return r;
 
-        /* Make sure no traffic from outside the local host can leak to onto this socket */
-        if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, "lo", 3) < 0)
+        if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, m->dns_stub_ifname, strlen(m->dns_stub_ifname)) < 0)
                 return -errno;
 
-        if (bind(fd, &sa.sa, sizeof(sa.in)) < 0)
+        if (bind(fd, &(m->dns_stub_sockaddr.sa), sizeof(m->dns_stub_sockaddr)) < 0)
                 return -errno;
 
         if (listen(fd, SOMAXCONN) < 0)
@@ -531,6 +523,10 @@ static int manager_dns_stub_tcp_fd(Manager *m) {
 
         return m->dns_stub_tcp_fd = TAKE_FD(fd);
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat=N"
+#pragma GCC diagnostic ignored "-Wformat-extra-args"
 
 int manager_dns_stub_start(Manager *m) {
         const char *t = "UDP";
@@ -555,21 +551,25 @@ int manager_dns_stub_start(Manager *m) {
                 r = manager_dns_stub_tcp_fd(m);
         }
 
+
         if (IN_SET(r, -EADDRINUSE, -EPERM)) {
                 if (r == -EADDRINUSE)
                         log_warning_errno(r,
-                                          "Another process is already listening on %s socket 127.0.0.53:53.\n"
-                                          "Turning off local DNS stub support.", t);
+                                          "Another process is already listening on %s socket %N.\n"
+                                          "Turning off local DNS stub support.", t, m->dns_stub_sockaddr);
                 else
                         log_warning_errno(r,
-                                          "Failed to listen on %s socket 127.0.0.53:53: %m.\n"
-                                          "Turning off local DNS stub support.", t);
+                                          "Failed to listen on %s socket %N: %m.\n"
+                                          "Turning off local DNS stub support.", t, m->dns_stub_sockaddr);
                 manager_dns_stub_stop(m);
         } else if (r < 0)
-                return log_error_errno(r, "Failed to listen on %s socket 127.0.0.53:53: %m", t);
+                return log_error_errno(r, "Failed to listen on %s socket %N: %m", t, m->dns_stub_sockaddr);
+
 
         return 0;
 }
+
+#pragma GCC diagnostic pop
 
 void manager_dns_stub_stop(Manager *m) {
         assert(m);

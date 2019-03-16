@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: LGPL-2.1+ */
 
 #include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include <poll.h>
 #include <stdio_ext.h>
 #include <sys/ioctl.h>
@@ -581,6 +583,14 @@ int manager_new(Manager **ret) {
                 .dns_over_tls_mode = DEFAULT_DNS_OVER_TLS_MODE,
                 .enable_cache = true,
                 .dns_stub_listener_mode = DNS_STUB_LISTENER_YES,
+
+                .dns_stub_sockaddr = {
+                        .in.sin_family = AF_INET,
+                        .in.sin_port = htobe16(INPORT_DNS_STUB),
+                        .in.sin_addr.s_addr = inet_addr((const char*)INADDR_DNS_STUB),
+                },
+                .dns_stub_ifname = (const char*)IFNAME_DNS_STUB,
+
                 .read_resolv_conf = true,
                 .need_builtin_fallbacks = true,
                 .etc_hosts_last = USEC_INFINITY,

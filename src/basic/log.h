@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <syslog.h>
+#include <printf.h>
 
 #include "macro.h"
 
